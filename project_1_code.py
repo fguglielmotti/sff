@@ -13,7 +13,7 @@ def inversion_formula_t_density(df, x_values):
         density.append(density_value)
     return np.array(density)
 
-# Function to plot the densities
+# Function to plot the densities ok 
 def plot_densities(df):
     if df <= 0:
         print("Degree of freedom must be positive.")
