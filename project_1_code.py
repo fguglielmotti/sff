@@ -14,6 +14,8 @@ from scipy.stats import t
 from scipy.optimize import minimize
 import random
 
+random.seed(2024)
+
 #Question 1
 def K(z,x):
     return scipy.special.kv(z,x, out=None)
@@ -87,7 +89,7 @@ def integrand(t, x, df1, df2):
     delt1 = sqrt(df1)
     delt2 = sqrt(df2)
     mu = 0
-    return np.exp(-1j * t * x) * CFt(t, lam1, alp, bet, delt1, mu) * CFt(t, lam2, alp, bet, delt2, mu)
+    return np.exp(-1j * t * x) * CFt(t, lam1, alp, bet, delt1, mu) * CFt(t, lam2, alp, bet, delt2, mu) #This is not the CF of t, need to find it somewhere in his book
 
 
 def inverse_fourier_transform(x, df1, df2, a=-3, b=3, n=2400):
@@ -128,7 +130,7 @@ def student_t_ES(df, loc=0, scale=1, ESlevel=0.05):
 print("True ES (Using the formula) at df1=20:", student_t_ES(df1))
 
 #Question 5 CHECK IF 5a IS CORRECT
-#5a) Perform bootstrap on the t-distribution, then output ES from the samples?
+#5a) Perform bootstrap on the t-distribution, then output (true ES) of the samples
 def bootstrap_ES(df, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
     t_values = np.random.standard_t(df, n)
     bootstrap_samples = np.random.choice(t_values, (B, n), replace=True)
@@ -138,10 +140,11 @@ def bootstrap_ES(df, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
         ES = mean(sample[sample < VaR]) #Average of the data below VaR
         ES_samples.append(ES)
     return mean(ES_samples)
-print("The true ES (Using Bootstrap) at df1=20:", bootstrap_ES(df1))
+
+true_ES = bootstrap_ES(df1)
+print("The true ES (Using Bootstrap) at df1=20:", true_ES)
 
 #5b) Assume the underlying distribution is student T, find the 90% CI of ES
-
 def mle_student_t(data):
     def neg_log_likelihood(params):
         df, loc, scale = params
@@ -152,14 +155,14 @@ def mle_student_t(data):
     result = minimize(neg_log_likelihood, initial_params, bounds=bounds)
     return {'df': result.x[0], 'loc': result.x[1], 'scale': result.x[2]}
 
-# Generate new set of data samples using the MLE parameters
+# enerate new set of data samples using the MLE parameters
 sample_data = np.random.standard_t(df1, 500)
 
 mle_params = mle_student_t(sample_data)
 df_mle, loc_mle, scale_mle = mle_params['df'], mle_params['loc'], mle_params['scale']
 simulated_samples = t.rvs(df_mle, loc_mle, scale_mle, size=500)
 
-# Compute the 90% confidence interval for the expected shortfall for the simulated samples
+#Compute the 90% CI for the ES for the simulated samples
 def bootstrap_ES_CI(data, ESlevel=0.05, B=500, CI=0.90):
     n = len(data)
     ES_samples = []
@@ -177,15 +180,11 @@ def bootstrap_ES_CI(data, ESlevel=0.05, B=500, CI=0.90):
 
 ES_CI_lower, ES_CI_upper = bootstrap_ES_CI(simulated_samples)
 
-print(f"90% Confidence Interval for Expected Shortfall: ({ES_CI_lower:.4f}, {ES_CI_upper:.4f})")
-
+print(f"90% Confidence Interval via Bootstrapping on simulated t-distribution for Expected Shortfall: ({ES_CI_lower:.4f}, {ES_CI_upper:.4f})")
 
 
 #Q5c
-VaR = np.percentile(simulated_samples, 0.05)
-
-ES = mean(simulated_samples[simulated_samples < VaR])
-
+#Choose with replacement 500 samples for each bootstrap and calculate the ES and VaR for each bootstrap
 def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500):
     n = len(data)
     VaR_samples = []
@@ -204,3 +203,56 @@ def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500):
     return VaR_CI, ES_CI, ES_samples
 
 VaR_CI, ES_CI, nonparametric_ES_samples = nonparametric_bootstrap_CI(simulated_samples)
+
+#Generate 500 samples from the MLE t-distrinution for each bootstrap and calculate the ES and VaR for each bootstrap
+def parametric_bootstrap_CI(df, loc, scale, ESlevel=0.05, B=500, CI=0.90):
+    ES_samples = []
+    
+    for _ in range(B):
+        bootstrap_sample = t.rvs(df, loc, scale, size=len(simulated_samples))
+        VaR = np.percentile(bootstrap_sample, ESlevel * 100)
+        ES = mean(bootstrap_sample[bootstrap_sample < VaR])
+        ES_samples.append(ES)
+    
+    lower_bound = np.percentile(ES_samples, (1 - CI) / 2 * 100)
+    upper_bound = np.percentile(ES_samples, (1 + CI) / 2 * 100)
+    
+    return lower_bound, upper_bound, ES_samples
+
+parametric_ES_CI_lower, parametric_ES_CI_upper, parametric_ES_samples = parametric_bootstrap_CI(df_mle, loc_mle, scale_mle)
+
+plt.figure(figsize=(12, 6))
+plt.boxplot([nonparametric_ES_samples, parametric_ES_samples], labels=['Nonparametric Bootstrap ES', 'Parametric Bootstrap ES'])
+plt.axhline(y=true_ES, color='r', linestyle='--', label=f'True ES (Using Bootstrap): {true_ES:.4f}')
+plt.title('Comparison of Nonparametric and Parametric Bootstrap ES Values')
+plt.ylabel('Expected Shortfall (ES)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#Q6 Run 1000 times and check coverage probability
+def check_coverage_probability(df, loc, scale, true_ES, ESlevel=0.05, B=500, CI=0.90, iterations=1000):
+    nonparametric_coverage = 0
+    parametric_coverage = 0
+    
+    for _ in tqdm(range(iterations)):
+        sample_data = t.rvs(df_mle, loc_mle, scale_mle, size=500)
+        
+        VaR_CI, ES_CI, nonparametric_ES_samples = nonparametric_bootstrap_CI(sample_data, ESlevel, B)
+        parametric_ES_CI_lower, parametric_ES_CI_upper, parametric_ES_samples = parametric_bootstrap_CI(df, loc, scale, ESlevel, B, CI)
+        
+        if ES_CI[0] <= true_ES <= ES_CI[1]:
+            nonparametric_coverage += 1
+        if parametric_ES_CI_lower <= true_ES <= parametric_ES_CI_upper:
+            parametric_coverage += 1
+    
+    nonparametric_coverage_prob = nonparametric_coverage / iterations
+    parametric_coverage_prob = parametric_coverage / iterations
+    
+    return nonparametric_coverage_prob, parametric_coverage_prob
+
+#Checking the coverage of the 90% CI for the ES using the nonparametric and parametric bootstrap methods, given the true ES using Bootstrap method
+nonparametric_coverage_prob, parametric_coverage_prob = check_coverage_probability(df_mle, loc_mle, scale_mle, true_ES)
+
+print(f"Nonparametric Bootstrap Coverage Probability: {nonparametric_coverage_prob:.4f}")
+print(f"Parametric Bootstrap Coverage Probability: {parametric_coverage_prob:.4f}")
