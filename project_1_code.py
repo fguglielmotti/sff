@@ -28,7 +28,7 @@ def CFt(x, lam, alp, bet, delt, mu):
 # Parameters given in the book
 df = 20
 lam = -df/2
-alp = 0.5
+alp = 0.01
 bet = 0
 delt = sqrt(df)
 mu = 0
@@ -39,11 +39,11 @@ t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
 
 plt.figure(figsize=(10, 6))
 plt.plot(x_values, y_values, label='CFt(x)', linewidth=2)
-plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2)
+plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle='--')
 plt.title('Plot of CFt(x) and Student\'s t-distribution from -3 to 3 with alpha = 0.5, df=20 (Cannot see difference with smaller alpha)')
 plt.xlabel('x')
 plt.ylabel('Probability')
-plt.legend()
+plt.legend() 
 plt.grid(True)
 plt.show()
 
