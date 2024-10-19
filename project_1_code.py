@@ -149,26 +149,6 @@ print("Bootstrapped 90% CI of ES at df1=20:", bootstrap_CI(df1))
 
 
 #Q5b? 3 parameter estimators
-def mle_t_params(data):
-    def neg_log_likelihood(params):
-        df, loc, scale = params
-        return -np.sum(t.logpdf(data, df, loc, scale))
-    
-    initial_params = [10, np.mean(data), np.std(data)]
-    bounds = [(2, None), (None, None), (1e-6, None)]
-    result = minimize(neg_log_likelihood, initial_params, bounds=bounds)
-    return result.x
-
-def parametric_bootstrap_CI(data, ESlevel=0.05, B=500):
-    df, loc, scale = mle_t_params(data)
-    ES_samples = []
-    for _ in range(B):
-        bootstrap_sample = t.rvs(df, loc, scale, size=len(data))
-        VaR = np.percentile(bootstrap_sample, ESlevel * 100)
-        ES = mean(bootstrap_sample[bootstrap_sample < VaR])
-        ES_samples.append(ES)
-    return np.percentile(ES_samples, [5, 95])
-
 
 def mle_student_t(data):
     def neg_log_likelihood(params):
@@ -180,9 +160,17 @@ def mle_student_t(data):
     result = minimize(neg_log_likelihood, initial_params, bounds=bounds)
     return {'df': result.x[0], 'loc': result.x[1], 'scale': result.x[2]}
 
+# Generate new set of data samples using the MLE parameters
+sample_data = np.random.standard_t(df1, 500)
+
+mle_params = mle_student_t(sample_data)
+df_mle, loc_mle, scale_mle = mle_params['df'], mle_params['loc'], mle_params['scale']
+simulated_samples = t.rvs(df_mle, loc_mle, scale_mle, size=500)
+
+print("Generated new data samples using MLE parameters:", new_data_samples)
 
 #Q5c
-sample_data = np.random.standard_t(df1, 500)
+
 
 VaR = np.percentile(sample_data, 0.05)
 
