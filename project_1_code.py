@@ -25,31 +25,34 @@ def y_x(x, mu, delt):
 def CFt(x, lam, alp, bet, delt, mu):
     return ((alp**2-bet**2)**(lam/2)*y_x(x, mu, delt)**(lam-1/2))/(sqrt(2*math.pi)*alp**(lam-1/2)*delt**lam*K(lam, delt*(sqrt(alp**2-bet**2))))*K(lam-1/2, alp*y_x(x, mu, delt))*exp(bet*(x-mu))
 
-# Parameters given in the book
-df = 20
-lam = -df/2
-alp = 0.01
-bet = 0
-delt = sqrt(df)
-mu = 0
+def plot_distributions(df):
+    lam = -df/2
+    alp = 0.01
+    bet = 0
+    delt = sqrt(df)
+    mu = 0
 
-x_values = np.linspace(-3, 3, 600)
-y_values = [CFt(x, lam, alp, bet, delt, mu) for x in x_values]
-t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
+    x_values = np.linspace(-3, 3, 600)
+    y_values = [CFt(x, lam, alp, bet, delt, mu) for x in x_values]
+    t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
 
-plt.figure(figsize=(10, 6))
-plt.plot(x_values, y_values, label='CFt(x)', linewidth=2)
-plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle='dotted')
-plt.title('Plot of CFt(x) and Student\'s t-distribution from -3 to 3 with alpha = 0.5, df=20 (Cannot see difference with smaller alpha)')
-plt.xlabel('x')
-plt.ylabel('Probability')
-plt.legend() 
-plt.grid(True)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    plt.plot(x_values, y_values, label='CFt(x)', linewidth=2)
+    plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle='dotted')
+    plt.title('Plot of CFt(x) and Student\'s t-distribution from -3 to 3 with alpha = 0.5, df=20 (Cannot see difference with smaller alpha)')
+    plt.xlabel('x')
+    plt.ylabel('Probability')
+    plt.legend() 
+    plt.grid(True)
+    plt.show()
+    return
+
+plot_distributions(20)
 
 #Question 2
 df1 = 20
 df2 = 10
+x_values = np.linspace(-3, 3, 600)
 
 def joint_pdf(x, y, df1, df2):
     return scipy.stats.t.pdf(x, df1) * scipy.stats.t.pdf(y, df2)
