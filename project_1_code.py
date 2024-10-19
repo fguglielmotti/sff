@@ -35,7 +35,7 @@ t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
 
 plt.figure(figsize=(10, 6))
 plt.plot(x_values, y_values, label='CFt(x)', linewidth=2)
-plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle='--')
+plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle='dotted')
 plt.title('Plot of CFt(x) and Student\'s t-distribution from -3 to 3 with alpha = 0.5, df=20 (Cannot see difference with smaller alpha)')
 plt.xlabel('x')
 plt.ylabel('Probability')
