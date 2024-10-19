@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import random
 from scipy.integrate import quad
+from scipy.stats import t
+from scipy.optimize import minimize
+import random
 
 #Question 1
 def K(z,x):
@@ -18,6 +21,7 @@ def K(z,x):
 def y_x(x, mu, delt):
     return sqrt(delt**2+(x-mu)**2)
 
+#
 def CFt(x, lam, alp, bet, delt, mu):
     return ((alp**2-bet**2)**(lam/2)*y_x(x, mu, delt)**(lam-1/2))/(sqrt(2*math.pi)*alp**(lam-1/2)*delt**lam*K(lam, delt*(sqrt(alp**2-bet**2))))*K(lam-1/2, alp*y_x(x, mu, delt))*exp(bet*(x-mu))
 
@@ -130,4 +134,98 @@ def bootstrap_ES(df, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
     return mean(ES_samples)
 print("Bootstrapped ES at df1=20:", bootstrap_ES(df1))
 
-#5b)
+#5b) Assume the underlying distribution is student T, find gthe 90% CI of ES
+def bootstrap_CI(df, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
+    t_values = np.random.standard_t(df, n)
+    bootstrap_samples = np.random.choice(t_values, (B, n), replace=True)
+    ES_samples = []
+    for sample in bootstrap_samples:
+        VaR = np.percentile(sample, ESlevel * 100)
+        ES = mean(sample[sample < VaR])
+        ES_samples.append(ES)
+    return np.percentile(ES_samples, [5, 95])
+
+print("Bootstrapped 90% CI of ES at df1=20:", bootstrap_CI(df1))
+
+
+#Q5b? 3 parameter estimators
+def mle_t_params(data):
+    def neg_log_likelihood(params):
+        df, loc, scale = params
+        return -np.sum(t.logpdf(data, df, loc, scale))
+    
+    initial_params = [10, np.mean(data), np.std(data)]
+    bounds = [(2, None), (None, None), (1e-6, None)]
+    result = minimize(neg_log_likelihood, initial_params, bounds=bounds)
+    return result.x
+
+def parametric_bootstrap_CI(data, ESlevel=0.05, B=500):
+    df, loc, scale = mle_t_params(data)
+    ES_samples = []
+    for _ in range(B):
+        bootstrap_sample = t.rvs(df, loc, scale, size=len(data))
+        VaR = np.percentile(bootstrap_sample, ESlevel * 100)
+        ES = mean(bootstrap_sample[bootstrap_sample < VaR])
+        ES_samples.append(ES)
+    return np.percentile(ES_samples, [5, 95])
+
+
+def mle_student_t(data):
+    def neg_log_likelihood(params):
+        df, loc, scale = params
+        return -np.sum(t.logpdf(data, df, loc, scale))
+    
+    initial_params = [10, np.mean(data), np.std(data)]
+    bounds = [(2, None), (None, None), (1e-6, None)]
+    result = minimize(neg_log_likelihood, initial_params, bounds=bounds)
+    return {'df': result.x[0], 'loc': result.x[1], 'scale': result.x[2]}
+
+
+#Q5c
+sample_data = np.random.standard_t(df1, 500)
+
+VaR = np.percentile(sample_data, 0.05)
+
+ES = mean(sample_data[sample_data < VaR])
+
+def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500):
+    n = len(data)
+    VaR_samples = []
+    ES_samples = []
+    
+    for _ in range(B):
+        bootstrap_sample = np.random.choice(data, n, replace=True)
+        VaR = np.percentile(bootstrap_sample, ESlevel * 100)
+        ES = mean(bootstrap_sample[bootstrap_sample < VaR])
+        VaR_samples.append(VaR)
+        ES_samples.append(ES)
+    
+    VaR_CI = np.percentile(VaR_samples, [5, 95])
+    ES_CI = np.percentile(ES_samples, [5, 95])
+    
+    return VaR_CI, ES_CI, ES_samples
+
+VaR_CI, ES_CI, nonparametric_ES_samples = nonparametric_bootstrap_CI(sample_data)
+
+def parametric_bootstrap_ES_samples(data, ESlevel=0.05, B=500):
+    df, loc, scale = mle_t_params(data)
+    ES_samples = []
+    for _ in range(B):
+        bootstrap_sample = t.rvs(df, loc, scale, size=len(data))
+        VaR = np.percentile(bootstrap_sample, ESlevel * 100)
+        ES = mean(bootstrap_sample[bootstrap_sample < VaR])
+        ES_samples.append(ES)
+    return ES_samples
+
+parametric_ES_samples = parametric_bootstrap_ES_samples(sample_data)
+
+true_ES = student_t_ES(df1)
+
+plt.figure(figsize=(10, 6))
+plt.boxplot([parametric_ES_samples, nonparametric_ES_samples], labels=['Parametric Bootstrap ES', 'Nonparametric Bootstrap ES'])
+plt.axhline(y=true_ES, color='r', linestyle='-', label=f'True ES: {true_ES:.4f}')
+plt.title('Box Plot of Parametric and Nonparametric Bootstrap ES Values')
+plt.ylabel('ES Value')
+plt.legend()
+plt.grid(True)
+plt.show()
