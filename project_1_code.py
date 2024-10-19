@@ -122,7 +122,7 @@ def student_t_ES(df, loc=0, scale=1, ESlevel=0.05):
     return -scipy.stats.t.pdf(scipy.stats.t.ppf(ESlevel, df), df, loc, scale)/scipy.stats.t.cdf(scipy.stats.t.ppf(ESlevel, df), df, loc, scale)*(df+scipy.stats.t.ppf(ESlevel, df)**2)/(df-1)
 
 #e.g.
-print("True ES at df1=20:", student_t_ES(df1))
+print("True ES (Using the formula) at df1=20:", student_t_ES(df1))
 
 #Question 5 CHECK IF 5a IS CORRECT
 #5a) Perform bootstrap on the t-distribution, then output ES from the samples?
@@ -135,23 +135,9 @@ def bootstrap_ES(df, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
         ES = mean(sample[sample < VaR]) #Average of the data below VaR
         ES_samples.append(ES)
     return mean(ES_samples)
-print("Bootstrapped ES at df1=20:", bootstrap_ES(df1))
+print("The true ES (Using Bootstrap) at df1=20:", bootstrap_ES(df1))
 
-#5b) Assume the underlying distribution is student T, find gthe 90% CI of ES
-def bootstrap_CI(df, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
-    t_values = np.random.standard_t(df, n)
-    bootstrap_samples = np.random.choice(t_values, (B, n), replace=True)
-    ES_samples = []
-    for sample in bootstrap_samples:
-        VaR = np.percentile(sample, ESlevel * 100)
-        ES = mean(sample[sample < VaR])
-        ES_samples.append(ES)
-    return np.percentile(ES_samples, [5, 95])
-
-print("Bootstrapped 90% CI of ES at df1=20:", bootstrap_CI(df1))
-
-
-#Q5b? 3 parameter estimators
+#5b) Assume the underlying distribution is student T, find the 90% CI of ES
 
 def mle_student_t(data):
     def neg_log_likelihood(params):
@@ -170,14 +156,32 @@ mle_params = mle_student_t(sample_data)
 df_mle, loc_mle, scale_mle = mle_params['df'], mle_params['loc'], mle_params['scale']
 simulated_samples = t.rvs(df_mle, loc_mle, scale_mle, size=500)
 
-print("Generated new data samples using MLE parameters:", new_data_samples)
+# Compute the 90% confidence interval for the expected shortfall for the simulated samples
+def bootstrap_ES_CI(data, ESlevel=0.05, B=500, CI=0.90):
+    n = len(data)
+    ES_samples = []
+    
+    for _ in range(B):
+        bootstrap_sample = np.random.choice(data, n, replace=True)
+        VaR = np.percentile(bootstrap_sample, ESlevel * 100)
+        ES = mean(bootstrap_sample[bootstrap_sample < VaR])
+        ES_samples.append(ES)
+    
+    lower_bound = np.percentile(ES_samples, (1 - CI) / 2 * 100)
+    upper_bound = np.percentile(ES_samples, (1 + CI) / 2 * 100)
+    
+    return lower_bound, upper_bound
+
+ES_CI_lower, ES_CI_upper = bootstrap_ES_CI(simulated_samples)
+
+print(f"90% Confidence Interval for Expected Shortfall: ({ES_CI_lower:.4f}, {ES_CI_upper:.4f})")
+
+
 
 #Q5c
+VaR = np.percentile(simulated_samples, 0.05)
 
-
-VaR = np.percentile(sample_data, 0.05)
-
-ES = mean(sample_data[sample_data < VaR])
+ES = mean(simulated_samples[simulated_samples < VaR])
 
 def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500):
     n = len(data)
@@ -196,27 +200,4 @@ def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500):
     
     return VaR_CI, ES_CI, ES_samples
 
-VaR_CI, ES_CI, nonparametric_ES_samples = nonparametric_bootstrap_CI(sample_data)
-
-def parametric_bootstrap_ES_samples(data, ESlevel=0.05, B=500):
-    df, loc, scale = mle_t_params(data)
-    ES_samples = []
-    for _ in range(B):
-        bootstrap_sample = t.rvs(df, loc, scale, size=len(data))
-        VaR = np.percentile(bootstrap_sample, ESlevel * 100)
-        ES = mean(bootstrap_sample[bootstrap_sample < VaR])
-        ES_samples.append(ES)
-    return ES_samples
-
-parametric_ES_samples = parametric_bootstrap_ES_samples(sample_data)
-
-true_ES = student_t_ES(df1)
-
-plt.figure(figsize=(10, 6))
-plt.boxplot([parametric_ES_samples, nonparametric_ES_samples], labels=['Parametric Bootstrap ES', 'Nonparametric Bootstrap ES'])
-plt.axhline(y=true_ES, color='r', linestyle='-', label=f'True ES: {true_ES:.4f}')
-plt.title('Box Plot of Parametric and Nonparametric Bootstrap ES Values')
-plt.ylabel('ES Value')
-plt.legend()
-plt.grid(True)
-plt.show()
+VaR_CI, ES_CI, nonparametric_ES_samples = nonparametric_bootstrap_CI(simulated_samples)
