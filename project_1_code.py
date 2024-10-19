@@ -48,6 +48,10 @@ def plot_distributions(df):
     plt.legend()
     plt.grid(True)
     plt.show()
+    diff = [(y - t) for y, t in zip(y_values, t_values)]
+    plt.plot(x_values, diff, label = 'Distance', color='green',linewidth=2)
+    plt.title('Plot of the Error of the Estimated Distribution')
+    plt.show()
     return
 
 plot_distributions(20)
