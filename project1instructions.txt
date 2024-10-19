@@ -1,0 +1,59 @@
+1.
+The first part of the assignment is to make a computer program that inputs a degree of freedom value (checks that it is positive), and plots, on a single graphic, using different colors for the two plotted lines, the exact density, and the one computed by using the inversion formula -- for which you need a FOR loop and done over a grid of values that covers "the majority" of the density, i.e., for large degrees of freedom, between say -3 and 3, while for the other extreme (low degrees of freedom, e.g., 1, Cauchy), between, say, -6 and 6. Use your common sense, and this is also practice for you making intelligent graphics for report writing.
+
+Note that you can choose the location term of the density to be zero, and the scale to be one, to keep things simple.
+
+The two lines on the plot should be essentially indistinguishable, right? Make the plotted lines a bit thicker than the default. In Matlab, this is done with:
+
+plot(x,y1,x,y2,'LineWidth',2.0)
+
+You can optionally add a graphic showing the relative percentage error (see one of my books for the definition of this). I presume there will be more error in the tails, and some oscillating behavior.
+
+Further optionally, you can find in my Intermediate book, chapter 1, for how to use the FFT. It will be faster than using a FOR loop for each point of the grid you use to display the density. If you additionally do this, that is fine, but you still need to use a FOR loop and the basic inversion formula.
+
+2.
+Make a computer program that inputs 2 degrees of freedom values (such as 3 and 5, for which we have a simple c.f. expression, but the program should be general!) and plots, on the same plot, 3 lines:
+
+a. the result of using the integral convolution formula for sums of two independent Student t random variables (with the degrees of freedom passed to the program). You will obviously need a numerical integration function, such as quadgk in Matlab. Let each distribution have zero location and unit scale term. In reality, these would not be 0 and 1, and would be passed to the function as well. For now, just use zero location and unit scale.
+
+b. Another line in the plot is the same density, but obtained via simulation. HINT: In Matlab, use the function "ksdensity" (read its help file). Obviously, the more simulations you do, the smoother and more accurate the resulting kernel density plot will be. Matlab and surely all packages (R and Python) have built-in methods to simulate Student t.
+
+c. The last line of the plot (and obviously use different color AND ADD A LEGEND TO THE PLOT) is obtained by using the characteristic function inversion formula. The two Student t random variables you are summing are independent, so this is very straightforward.
+
+Note that the lines in the graphic should be essentially overlapping if you got everything correct. Again, be sure to add a "legend" to the graphic, as well as labeling the x and y axes, and have a title. And, in latex, add a caption to the graphic, and a label, so that in your written text, you refer to the graphic as \ref{labelname}. (Remember, part of this class is to help train you to write professional reports...)
+
+3.
+Read the (important stuff, not all of it) appendix material from "Fundamental Statistics" on VaR and ES (I think it was section A.8), especially note the ES formula for the Student t. We need that. To get the VaR for the Student t, you just need to use a function built in to whatever computing language you use to get the quantile. For example, in Matlab it is: "tinv".
+
+4.
+Program a function to input the parameters of the Student t (location, scale, df, and ESlevel), where ESlevel is the number in (0,1) indicating the tail probability --- make the default value for ESlevel 0.05. (That means, set up your codes so if ESlevel is not passed to the function, it defaults to 0.05.)  Default for location is zero, and default for scale is 1.0. Out of the function comes the ES value. Notice this is the TRUE VALUE, computed from the formula in my book!
+
+As said above, in our application, for location, you can take 0, and for scale, you can take 1.0. But your codes above input also the location and scale, and compute the ES based on this location-scale transform Student t.  In reality, with real data, these would differ from these "base case" values of location zero and scale one, but for now, it is enough to work with the "standard" Student t.
+
+5.
+
+5a.
+Make a program that inputs a df value (it must be > 1 to ensure existence of the ES), and a sample size n (default 500), and a value B, the number of bootstrap replications (default 500 -- lower this if the computational burden is too much for your laptop). Use df=4 and n=250, but of course you can play with other values. The program generates a random data set of IID Student's t realizations (with location zero and scale 1.0 and the passed df value). (You can use a built-in generator, e.g., in Matlab, "trnd".) The output of the function is as follows:
+
+The true ES (for a given ESlevel --- you can use 0.05), is discussed above.
+
+5b.
+Generate a 90% confidence interval of the ES, based on the *parametric* bootstrap. That means, the output is (a vector of) 2 values ---- the lower and upper endpoints of the confidence interval (CI). Let's fix 90%, keep it simple.
+
+NOTE: You need the maximum likelihood estimator (MLE) for the location-scale Student t, applied to the simulated data set. You use the MLE parameter vector to generate samples of Student t for the bootstrap (use the single bootstrap, not the double). You do NOT use the true parameter values! (You will not have them in real life, right?) You compute the ES for each of the B resamples and then make a histogram, and extract, via sample quantiles (there is a function in Matlab for this) the lower and upper CI endpoints.
+
+To compute the MLE of the IID location scale Student t, you may use built-in functions for the MLE of the Student t (see, e.g., for Matlab, the web page https://www.mathworks.com/help/stats/mle.html). Or, jump ahead in my book Fundamental Statistics, and see pages 141 and 142 for codes in Matlab to do this. Just copy-paste and use it!
+
+5c.
+Now repeat with the nonparametric bootstrap and using the empirical estimator of the ES --- again, see the A.8 appendix.
+
+For a n-length IID sequence of simulated Student t realizations, you need to compute the *EMPIRICAL* VaR, which can be done using Matlab's quantile function, or similar in other languages. Then, the EMPIRICAL ES is determined similarly, see for example page 445 of my book Fundamental Statistical Inference, the first "boxed" segment of code.
+
+Then, you use the nonparametric bootstrap (see chapter 1) to draw with replacement from the simulated n-length sample of data, and compute again, B=500 times, the empirical VaR (the quantile) and the ES. From these 500 values, you generate the lower and upper limits of a 90% confidence interval.
+
+Try to make a nice plot --- make a "box plot" (google it) of the parametric bootstrap ES values, and on the same graphic (nicely labeled), the same thing, but based on the nonparametric bootstrap. Generate a horizontal line showing the TRUE ES value, from #6. In this case, we of course expect the parametric bootstrap values to be closer (in mean, and spread) to the true value, than the nonparametric one. Demonstrate this.
+
+6.
+Repeat the previous exercise "sim" number of times, say 1000 (less if you have time issues), and record, for the parametric and nonparametric confidence intervals, the empirical ("actual") coverage probability. We hope that it is close to 90%, because the nominal coverage was set to 90%, right? Report these values.
+
+Also report the average LENGTH of the "sim=1000" confidence intervals. That is, the high endpoint minus the low endpoint. We expect the parametric ones to be shorter, right?
