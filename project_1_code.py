@@ -14,7 +14,9 @@ from scipy.stats import t
 from scipy.optimize import minimize
 import random
 
-random.seed(2024)
+random.seed(1234)
+np.random.seed(1234)
+
 
 #Question 1
 def K(z,x):
@@ -23,7 +25,7 @@ def K(z,x):
 def y_x(x, mu, delt):
     return sqrt(delt**2+(x-mu)**2)
 
-def CFt(x, lam, alp, bet, delt, mu):
+def CFt(x, lam, alp, bet, delt, mu): #This is not the CF of t, but rather it is the GHyp function, which is basically the CDF of t.
     return ((alp**2-bet**2)**(lam/2)*y_x(x, mu, delt)**(lam-1/2))/(sqrt(2*math.pi)*alp**(lam-1/2)*delt**lam*K(lam, delt*(sqrt(alp**2-bet**2))))*K(lam-1/2, alp*y_x(x, mu, delt))*exp(bet*(x-mu))
 
 def plot_distributions(df):
@@ -135,8 +137,9 @@ print("True ES (Using the formula) at df1=20:", student_t_ES(df1))
 
 #Question 5 CHECK IF 5a IS CORRECT
 #5a) Perform bootstrap on the t-distribution, then output (true ES) of the samples
-def bootstrap_ES(df, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
-    t_values = np.random.standard_t(df, n)
+sample_data = np.random.standard_t(df1, 500)
+
+def bootstrap_ES(df, t_values, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
     bootstrap_samples = np.random.choice(t_values, (B, n), replace=True)
     ES_samples = []
     for sample in bootstrap_samples:
@@ -145,7 +148,7 @@ def bootstrap_ES(df, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
         ES_samples.append(ES)
     return mean(ES_samples)
 
-true_ES = bootstrap_ES(df1)
+true_ES = bootstrap_ES(df1, sample_data)
 print("The true ES (Using Bootstrap) at df1=20:", true_ES)
 
 #5b) Assume the underlying distribution is student T, find the 90% CI of ES
@@ -159,9 +162,7 @@ def mle_student_t(data):
     result = minimize(neg_log_likelihood, initial_params, bounds=bounds)
     return {'df': result.x[0], 'loc': result.x[1], 'scale': result.x[2]}
 
-# enerate new set of data samples using the MLE parameters
-sample_data = np.random.standard_t(df1, 500)
-
+#Generate new set of data samples using the MLE parameters
 mle_params = mle_student_t(sample_data)
 df_mle, loc_mle, scale_mle = mle_params['df'], mle_params['loc'], mle_params['scale']
 simulated_samples = t.rvs(df_mle, loc_mle, scale_mle, size=500)
@@ -234,7 +235,8 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-#Q6 Run 1000 times and check coverage probability
+#Question 6 
+#Run 1000 times and check coverage probability
 def check_coverage_probability(df, loc, scale, true_ES, ESlevel=0.05, B=500, CI=0.90, iterations=1000):
     nonparametric_coverage = 0
     parametric_coverage = 0
