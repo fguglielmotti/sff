@@ -21,28 +21,31 @@ def K(z,x):
 def y_x(x, mu, delt):
     return sqrt(delt**2+(x-mu)**2)
 
-#
 def CFt(x, lam, alp, bet, delt, mu):
     return ((alp**2-bet**2)**(lam/2)*y_x(x, mu, delt)**(lam-1/2))/(sqrt(2*math.pi)*alp**(lam-1/2)*delt**lam*K(lam, delt*(sqrt(alp**2-bet**2))))*K(lam-1/2, alp*y_x(x, mu, delt))*exp(bet*(x-mu))
 
 def plot_distributions(df):
+    
+    if df<0:
+        return "ERROR: degrees of freedom cannot be negative."
+    
+    #Using the parameters from the book:
     lam = -df/2
     alp = 0.01
     bet = 0
     delt = sqrt(df)
     mu = 0
-
-    x_values = np.linspace(-3, 3, 600)
+    x_values = np.linspace(-3,3,600) if df>25 else np.linspace(-6,6,600)
+    x_size = 3 if df>25 else 6
     y_values = [CFt(x, lam, alp, bet, delt, mu) for x in x_values]
     t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
-
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(10, x_size))
     plt.plot(x_values, y_values, label='CFt(x)', linewidth=2)
-    plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle='dotted')
-    plt.title('Plot of CFt(x) and Student\'s t-distribution from -3 to 3 with alpha = 0.5, df=20 (Cannot see difference with smaller alpha)')
+    plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle= 'dotted')
+    plt.title('Plot of CFt(x) and Student\'s t-distribution from ' + str(x_size) + ' to ' + str(x_size) + ', alpha = 0.01, df=' + str(df))
     plt.xlabel('x')
     plt.ylabel('Probability')
-    plt.legend() 
+    plt.legend()
     plt.grid(True)
     plt.show()
     return
