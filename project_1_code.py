@@ -13,10 +13,13 @@ from scipy.integrate import quad
 from scipy.stats import t
 from scipy.optimize import minimize
 import random
+from scipy.special import kv, gamma  
+from scipy.fft import fftshift, ifft
 
 random.seed(1234)
 np.random.seed(1234)
 
+#%%
 
 #Question 1
 def K(z,x):
@@ -60,10 +63,13 @@ def plot_distributions(df):
 
 plot_distributions(20)
 
+#%%
 #Question 2
 df1 = 20
 df2 = 10
 x_values = np.linspace(-3, 3, 600)
+
+#a)
 
 def joint_pdf(x, y, df1, df2):
     return scipy.stats.t.pdf(x, df1) * scipy.stats.t.pdf(y, df2)
@@ -87,6 +93,13 @@ t2_samples = np.random.standard_t(df2, n)
 sum_samples = t1_samples + t2_samples
 
 #c) This part need a bit of work I have no idea how to fix it
+
+#Characteristic function found in the Gaunt article (already cited in overleaf)
+def cf_student_t(t, nu):
+    numerator = kv(nu / 2, np.sqrt(nu) * np.abs(t)) * (np.sqrt(nu) * np.abs(t)) ** (nu / 2)
+    denominator = gamma(nu / 2) * (2 ** (nu / 2 - 1))    
+    return numerator / denominator
+
 def integrand(t, x, df1, df2):
     lam1 = -df1 / 2
     lam2 = -df2 / 2
@@ -106,6 +119,10 @@ def inverse_fourier_transform(x, df1, df2, a=-3, b=3, n=2400):
 
 pdf_values = [inverse_fourier_transform(x, df1, df2) for x in tqdm(x_values)]
 
+
+
+
+
 plt.figure(figsize=(10, 6))
 plt.plot(x_values, pdf_values, label='PDF from Inverse Fourier Transform', linewidth=2, color='green')
 plt.plot(x_values, conv_pdf_numerical, label='Convolution of two t-distributions (Numerical Integration)', linewidth=2, color='red')
@@ -118,6 +135,7 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
+#%%
 #Question 3 ES and VaR page 446, defining losses as a negative value, hence ES = E[L|L<VaR]
 def ESt(df, c): #(Here c is the VaR at quantile alpha)
     return -scipy.stats.t.pdf(c, df1)/scipy.stats.t.cdf(c, df1)*(df1+c**2)/(df1-1)
@@ -128,6 +146,8 @@ def VaRt(df1, alpha):
 
 #print(VaRt(df1, 0.05), ESt(df1, VaRt(df1, 0.05)))
 
+
+#%%
 #Question 4
 def student_t_ES(df, loc=0, scale=1, ESlevel=0.05):
     return -scipy.stats.t.pdf(scipy.stats.t.ppf(ESlevel, df), df, loc, scale)/scipy.stats.t.cdf(scipy.stats.t.ppf(ESlevel, df), df, loc, scale)*(df+scipy.stats.t.ppf(ESlevel, df)**2)/(df-1)
@@ -135,6 +155,8 @@ def student_t_ES(df, loc=0, scale=1, ESlevel=0.05):
 #e.g.
 print("True ES (Using the formula) at df1=20:", student_t_ES(df1))
 
+
+#%%
 #Question 5 CHECK IF 5a IS CORRECT
 #5a) Perform bootstrap on the t-distribution, then output (true ES) of the samples
 sample_data = np.random.standard_t(df1, 500)
@@ -235,6 +257,8 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
+
+#%%
 #Question 6 
 #Run 1000 times and check coverage probability
 def check_coverage_probability(df, loc, scale, true_ES, ESlevel=0.05, B=500, CI=0.90, iterations=1000):
