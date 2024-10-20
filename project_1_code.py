@@ -108,10 +108,10 @@ def integrand(t, x, df1, df2):
     delt1 = sqrt(df1)
     delt2 = sqrt(df2)
     mu = 0
-    return np.exp(-1j * t * x) * CFt(t, lam1, alp, bet, delt1, mu) * CFt(t, lam2, alp, bet, delt2, mu) #This is not the CF of t, need to find it somewhere in his book
+    return (1/(math.pi*2))*np.exp(-1j * t * x) * cf_student_t(t, df1) * cf_student_t(t, df2)#CFt(t, lam1, alp, bet, delt1, mu) * CFt(t, lam2, alp, bet, delt2, mu) #This is not the CF of t, need to find it somewhere in his book
 
 
-def inverse_fourier_transform(x, df1, df2, a=-3, b=3, n=2400):
+def inverse_fourier_transform(x, df1, df2, a=-3, b=3, n=1200):
     t_values = np.linspace(a, b, n)
     integrand_values = [integrand(t, x, df1, df2) for t in t_values]
     integral = scipy.integrate.trapezoid(integrand_values, t_values)
@@ -120,13 +120,10 @@ def inverse_fourier_transform(x, df1, df2, a=-3, b=3, n=2400):
 pdf_values = [inverse_fourier_transform(x, df1, df2) for x in tqdm(x_values)]
 
 
-
-
-
 plt.figure(figsize=(10, 6))
-plt.plot(x_values, pdf_values, label='PDF from Inverse Fourier Transform', linewidth=2, color='green')
-plt.plot(x_values, conv_pdf_numerical, label='Convolution of two t-distributions (Numerical Integration)', linewidth=2, color='red')
-sns.kdeplot(sum_samples, label='Simulated Sum of t-distributions', color='blue', linewidth=2)
+plt.plot(x_values, pdf_values, label='PDF from Inverse Fourier Transform', linewidth=3, color='green')
+plt.plot(x_values, conv_pdf_numerical, label='Convolution of two t-distributions (Numerical Integration)', linewidth=3, color='red', linestyle='dotted')
+sns.kdeplot(sum_samples, label='Simulated Sum of t-distributions', color='blue', linewidth=3, linestyle='dotted')
 plt.title('Comparison of PDF from Inverse Fourier Transform, Simulated Sum, and Numerical Integration of two t-distributions with df1=20 and df2=10')
 plt.xlabel('x')
 plt.ylabel('Probability')
