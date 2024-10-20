@@ -22,34 +22,35 @@ np.random.seed(1234)
 #%%
 
 #Question 1
-def K(z,x):
-    return scipy.special.kv(z,x, out=None)
+#Characteristic function found in the Gaunt article (already cited in overleaf)
+def cf_student_t(t, nu):
+    numerator = kv(nu / 2, np.sqrt(nu) * np.abs(t)) * (np.sqrt(nu) * np.abs(t)) ** (nu / 2)
+    denominator = gamma(nu / 2) * (2 ** (nu / 2 - 1))    
+    return numerator / denominator
 
-def y_x(x, mu, delt):
-    return sqrt(delt**2+(x-mu)**2)
+def integrand(t, x, df):
+    return (1/(math.pi*2))*np.exp(-1j * t * x) * cf_student_t(t, df)
 
-def CFt(x, lam, alp, bet, delt, mu): #This is not the CF of t, but rather it is the GHyp function, which is basically the CDF of t.
-    return ((alp**2-bet**2)**(lam/2)*y_x(x, mu, delt)**(lam-1/2))/(sqrt(2*math.pi)*alp**(lam-1/2)*delt**lam*K(lam, delt*(sqrt(alp**2-bet**2))))*K(lam-1/2, alp*y_x(x, mu, delt))*exp(bet*(x-mu))
+
+def inverse_fourier_transform(x, df, a=-3, b=3, n=600):
+    t_values = np.linspace(a, b, n)
+    integrand_values = [integrand(t, x, df) for t in t_values]
+    integral = scipy.integrate.trapezoid(integrand_values, t_values)
+    return integral.real
 
 def plot_distributions(df):
     
     if df<0:
         return "ERROR: degrees of freedom cannot be negative."
-    
-    #Using the parameters from the book:
-    lam = -df/2
-    alp = 0.01
-    bet = 0
-    delt = sqrt(df)
-    mu = 0
+
     x_values = np.linspace(-3,3,600) if df>25 else np.linspace(-6,6,600)
     x_size = 3 if df>25 else 6
-    y_values = [CFt(x, lam, alp, bet, delt, mu) for x in x_values]
+    y_values = [inverse_fourier_transform(x, df1) for x in tqdm(x_values)]
     t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
     plt.figure(figsize=(10, x_size))
     plt.plot(x_values, y_values, label='CFt(x)', linewidth=2)
     plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle= 'dotted')
-    plt.title('Plot of CFt(x) and Student\'s t-distribution from ' + str(x_size) + ' to ' + str(x_size) + ', alpha = 0.01, df=' + str(df))
+    plt.title('Plot of Inversion Formula PDF and Student\'s t-distribution from ' + str(x_size) + ' to ' + str(x_size) + ', alpha = 0.01, df=' + str(df))
     plt.xlabel('x')
     plt.ylabel('Probability')
     plt.legend()
@@ -94,30 +95,17 @@ sum_samples = t1_samples + t2_samples
 
 #c) This part need a bit of work I have no idea how to fix it
 
-#Characteristic function found in the Gaunt article (already cited in overleaf)
-def cf_student_t(t, nu):
-    numerator = kv(nu / 2, np.sqrt(nu) * np.abs(t)) * (np.sqrt(nu) * np.abs(t)) ** (nu / 2)
-    denominator = gamma(nu / 2) * (2 ** (nu / 2 - 1))    
-    return numerator / denominator
-
-def integrand(t, x, df1, df2):
-    lam1 = -df1 / 2
-    lam2 = -df2 / 2
-    alp = 0.01
-    bet = 0
-    delt1 = sqrt(df1)
-    delt2 = sqrt(df2)
-    mu = 0
+def integrand_joint(t, x, df1, df2):
     return (1/(math.pi*2))*np.exp(-1j * t * x) * cf_student_t(t, df1) * cf_student_t(t, df2)#CFt(t, lam1, alp, bet, delt1, mu) * CFt(t, lam2, alp, bet, delt2, mu) #This is not the CF of t, need to find it somewhere in his book
 
 
-def inverse_fourier_transform(x, df1, df2, a=-3, b=3, n=1200):
+def inverse_fourier_transform_joint(x, df1, df2, a=-3, b=3, n=600):
     t_values = np.linspace(a, b, n)
-    integrand_values = [integrand(t, x, df1, df2) for t in t_values]
+    integrand_values = [integrand_joint(t, x, df1, df2) for t in t_values]
     integral = scipy.integrate.trapezoid(integrand_values, t_values)
     return integral.real
 
-pdf_values = [inverse_fourier_transform(x, df1, df2) for x in tqdm(x_values)]
+pdf_values = [inverse_fourier_transform_joint(x, df1, df2) for x in tqdm(x_values)]
 
 
 plt.figure(figsize=(10, 6))
