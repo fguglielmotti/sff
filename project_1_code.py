@@ -147,6 +147,8 @@ print("True ES (Using the formula) at df1=20:", student_t_ES(df1))
 sample_data = np.random.standard_t(df1, 500)
 
 def bootstrap_ES(df, t_values, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
+    if df<=1:
+        return "Degrees of freedom must be above 1"
     bootstrap_samples = np.random.choice(t_values, (B, n), replace=True)
     ES_samples = []
     for sample in bootstrap_samples:
