@@ -48,7 +48,7 @@ def plot_distributions(df):
     y_values = [inverse_fourier_transform(x, df1) for x in tqdm(x_values)]
     t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
     plt.figure(figsize=(10, x_size))
-    plt.plot(x_values, y_values, label='CFt(x)', linewidth=2)
+    plt.plot(x_values, y_values, label='Inversion Formula PDF', linewidth=2)
     plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle= 'dotted')
     plt.title('Plot of Inversion Formula PDF and Student\'s t-distribution from ' + str(x_size) + ' to ' + str(x_size) + ', alpha = 0.01, df=' + str(df))
     plt.xlabel('x')
