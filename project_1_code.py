@@ -93,11 +93,9 @@ t1_samples = np.random.standard_t(df1, n)
 t2_samples = np.random.standard_t(df2, n)
 sum_samples = t1_samples + t2_samples
 
-#c) This part need a bit of work I have no idea how to fix it
-
+#c)
 def integrand_joint(t, x, df1, df2):
     return (1/(math.pi*2))*np.exp(-1j * t * x) * cf_student_t(t, df1) * cf_student_t(t, df2)#CFt(t, lam1, alp, bet, delt1, mu) * CFt(t, lam2, alp, bet, delt2, mu) #This is not the CF of t, need to find it somewhere in his book
-
 
 def inverse_fourier_transform_joint(x, df1, df2, a=-3, b=3, n=600):
     t_values = np.linspace(a, b, n)
@@ -106,7 +104,6 @@ def inverse_fourier_transform_joint(x, df1, df2, a=-3, b=3, n=600):
     return integral.real
 
 pdf_values = [inverse_fourier_transform_joint(x, df1, df2) for x in tqdm(x_values)]
-
 
 plt.figure(figsize=(10, 6))
 plt.plot(x_values, pdf_values, label='PDF from Inverse Fourier Transform', linewidth=3, color='green')
