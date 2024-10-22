@@ -183,12 +183,11 @@ df_mle, loc_mle, scale_mle = mle_params['df'], mle_params['loc'], mle_params['sc
 simulated_samples = t.rvs(df_mle, loc_mle, scale_mle, size=500)
 
 #Compute the 90% CI for the ES for the simulated samples
-def bootstrap_ES_CI(data, ESlevel=0.05, B=500, CI=0.90):
-    n = len(data)
+def parametric_bootstrap_CI(df, loc, scale, ESlevel=0.05, B=500, CI=0.90):
     ES_samples = []
     
     for _ in range(B):
-        bootstrap_sample = np.random.choice(data, n, replace=True)
+        bootstrap_sample = t.rvs(df, loc, scale, size=len(simulated_samples))
         VaR = np.percentile(bootstrap_sample, ESlevel * 100)
         ES = mean(bootstrap_sample[bootstrap_sample < VaR])
         ES_samples.append(ES)
@@ -196,15 +195,15 @@ def bootstrap_ES_CI(data, ESlevel=0.05, B=500, CI=0.90):
     lower_bound = np.percentile(ES_samples, (1 - CI) / 2 * 100)
     upper_bound = np.percentile(ES_samples, (1 + CI) / 2 * 100)
     
-    return lower_bound, upper_bound
+    return lower_bound, upper_bound, ES_samples
 
-ES_CI_lower, ES_CI_upper = bootstrap_ES_CI(simulated_samples)
+parametric_ES_CI_lower, parametric_ES_CI_upper, parametric_ES_samples = parametric_bootstrap_CI(df_mle, loc_mle, scale_mle)
 
-print(f"90% Confidence Interval via Bootstrapping on simulated t-distribution for Expected Shortfall: ({ES_CI_lower:.4f}, {ES_CI_upper:.4f})")
+print(f"90% Confidence Interval via Bootstrapping on simulated t-distribution for Expected Shortfall: ({parametric_ES_CI_lower:.4f}, {parametric_ES_CI_upper:.4f})")
 
 
 #Q5c
-#Choose with replacement 500 samples for each bootstrap and calculate the ES and VaR for each bootstrap
+#Choose with replacement 500 samples for each bootstrap and calculate the ES and VaR for each bootstrap, using only one set of data generated from the MLE t-distribution
 def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500):
     n = len(data)
     VaR_samples = []
@@ -223,23 +222,6 @@ def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500):
     return VaR_CI, ES_CI, ES_samples
 
 VaR_CI, ES_CI, nonparametric_ES_samples = nonparametric_bootstrap_CI(simulated_samples)
-
-#Generate 500 samples from the MLE t-distrinution for each bootstrap and calculate the ES and VaR for each bootstrap
-def parametric_bootstrap_CI(df, loc, scale, ESlevel=0.05, B=500, CI=0.90):
-    ES_samples = []
-    
-    for _ in range(B):
-        bootstrap_sample = t.rvs(df, loc, scale, size=len(simulated_samples))
-        VaR = np.percentile(bootstrap_sample, ESlevel * 100)
-        ES = mean(bootstrap_sample[bootstrap_sample < VaR])
-        ES_samples.append(ES)
-    
-    lower_bound = np.percentile(ES_samples, (1 - CI) / 2 * 100)
-    upper_bound = np.percentile(ES_samples, (1 + CI) / 2 * 100)
-    
-    return lower_bound, upper_bound, ES_samples
-
-parametric_ES_CI_lower, parametric_ES_CI_upper, parametric_ES_samples = parametric_bootstrap_CI(df_mle, loc_mle, scale_mle)
 
 plt.figure(figsize=(12, 6))
 plt.boxplot([nonparametric_ES_samples, parametric_ES_samples], labels=['Nonparametric Bootstrap ES', 'Parametric Bootstrap ES'])
