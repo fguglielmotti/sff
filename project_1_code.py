@@ -12,7 +12,6 @@ import random
 from scipy.integrate import quad
 from scipy.stats import t
 from scipy.optimize import minimize
-import random
 from scipy.special import kv, gamma  
 from scipy.fft import fftshift, ifft
 
@@ -197,13 +196,12 @@ def parametric_bootstrap_CI(df, loc, scale, ESlevel=0.05, B=500, CI=0.90, n=500)
 
 parametric_ES_CI_lower, parametric_ES_CI_upper, parametric_ES_samples = parametric_bootstrap_CI(df_mle, loc_mle, scale_mle)
 
-print(f"90% Confidence Interval via Bootstrapping on simulated t-distribution for Expected Shortfall: ({parametric_ES_CI_lower:.4f}, {parametric_ES_CI_upper:.4f})")
+print(f"90% Confidence Interval via parametric Bootstrapping on simulated t-distribution for Expected Shortfall: ({parametric_ES_CI_lower:.4f}, {parametric_ES_CI_upper:.4f})")
 
 
 #Q5c
 #Choose with replacement 500 samples for each bootstrap and calculate the ES and VaR for each bootstrap, using only one set of data generated from the MLE t-distribution
-def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90):
-    n = len(data)
+def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90, n=500):
     ES_samples = []
     
     for _ in range(B):
@@ -219,6 +217,9 @@ def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90):
 
 nonparametric_ES_CI_lower, nonparametric_ES_CI_upper, nonparametric_ES_samples = nonparametric_bootstrap_CI(simulated_samples)
 
+print(f"90% Confidence Interval via nonparametric Bootstrapping on simulated t-distribution for Expected Shortfall: ({nonparametric_ES_CI_lower:.4f}, {nonparametric_ES_CI_upper:.4f})")
+
+
 plt.figure(figsize=(12, 6))
 plt.boxplot([nonparametric_ES_samples, parametric_ES_samples], labels=['Nonparametric Bootstrap ES', 'Parametric Bootstrap ES'])
 plt.axhline(y=true_ES, color='r', linestyle='--', label=f'True ES (Using Bootstrap): {true_ES:.4f}')
@@ -232,19 +233,19 @@ plt.show()
 #%%
 #Question 6 
 #Run 1000 times and check coverage probability
-def check_coverage_probability(df, loc, scale, true_ES, data, ESlevel=0.05, B=500, CI=0.90, iterations=200):
+def check_coverage_probability(df, loc, scale, true_ES, data, iterations=50):
     nonparametric_coverage = 0
     parametric_coverage = 0
-    
     for _ in tqdm(range(iterations)):
-        nonparametric_ES_CI_lower, nonparametric_ES_CI_upper, _ = nonparametric_bootstrap_CI(data, ESlevel, B)
-        parametric_ES_CI_lower, parametric_ES_CI_upper, _ = parametric_bootstrap_CI(df, loc, scale, ESlevel, B, CI)
+        nonparametric_ES_CI_lower, nonparametric_ES_CI_upper, _ = nonparametric_bootstrap_CI(data)
+        parametric_ES_CI_lower, parametric_ES_CI_upper, _ = parametric_bootstrap_CI(df, loc, scale)
         
         if nonparametric_ES_CI_lower <= true_ES <= nonparametric_ES_CI_upper:
             nonparametric_coverage += 1
         if parametric_ES_CI_lower <= true_ES <= parametric_ES_CI_upper:
             parametric_coverage += 1
-    
+        print(f"Nonparametric Bootstrap CI: ({nonparametric_ES_CI_lower:.4f}, {nonparametric_ES_CI_upper:.4f})")
+        print(f"Parametric Bootstrap CI: ({parametric_ES_CI_lower:.4f}, {parametric_ES_CI_upper:.4f})")
     nonparametric_coverage_prob = nonparametric_coverage / iterations
     parametric_coverage_prob = parametric_coverage / iterations
     
