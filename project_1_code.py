@@ -45,7 +45,7 @@ def plot_distributions(df):
 
     x_values = np.linspace(-3,3,600) if df>25 else np.linspace(-6,6,600)
     x_size = 3 if df>25 else 6
-    y_values = [inverse_fourier_transform(x, df1) for x in tqdm(x_values)]
+    y_values = [inverse_fourier_transform(x, df) for x in tqdm(x_values)]
     t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
     plt.figure(figsize=(10, x_size))
     plt.plot(x_values, y_values, label='Inversion Formula PDF', linewidth=2)
@@ -134,30 +134,39 @@ def VaRt(df1, alpha):
 def student_t_ES(df, loc=0, scale=1, ESlevel=0.05):
     return -scipy.stats.t.pdf(scipy.stats.t.ppf(ESlevel, df), df, loc, scale)/scipy.stats.t.cdf(scipy.stats.t.ppf(ESlevel, df), df, loc, scale)*(df+scipy.stats.t.ppf(ESlevel, df)**2)/(df-1)
 
-#e.g.
-print("True ES (Using the formula) at df1=20:", student_t_ES(df1))
+true_ES = student_t_ES(df1)
 
 
 #%%
-#Question 5 CHECK IF 5a IS CORRECT
+#Question 5 CHECK IF 5a IS CORRECT, because if we use bootstrap, unless we have large samples and large bootstrap replications, we will not get the true ES
 #5a) Perform bootstrap on the t-distribution, then output (true ES) of the samples
-sample_data = np.random.standard_t(df1, 500)
-
-def bootstrap_ES(df, t_values, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
-    if df<=1:
-        return "Degrees of freedom must be above 1"
-    bootstrap_samples = np.random.choice(t_values, (B, n), replace=True)
+def bootstrap_5a(df, n=500, B=500):
     ES_samples = []
-    for sample in bootstrap_samples:
-        VaR = np.percentile(sample, ESlevel * 100) #5% of the data
-        ES = mean(sample[sample < VaR]) #Average of the data below VaR
+    for _ in tqdm(range(B)):
+        sample_data = np.random.standard_t(df, n)
+        VaR = np.percentile(sample_data, 5)
+        ES = mean(sample_data[sample_data < VaR])
         ES_samples.append(ES)
     return mean(ES_samples)
 
-true_ES = bootstrap_ES(df1, sample_data)
-print("The true ES (Using Bootstrap) at df1=20:", true_ES)
+print("True ES (Using the formula) at df1=20:", true_ES)
+print("The true ES (Using Bootstrap) at df1=20:", bootstrap_5a(df1))
+
+# def bootstrap_ES(df, t_values, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
+#     if df<=1:
+#         return "Degrees of freedom must be above 1"
+#     bootstrap_samples = np.random.choice(t_values, (B, n), replace=True)
+#     ES_samples = []
+#     for sample in bootstrap_samples:
+#         VaR = np.percentile(sample, ESlevel * 100)
+#         ES = mean(sample[sample < VaR])
+#         ES_samples.append(ES)
+#     return np.percentile(ES_samples, ESlevel * 100)
+
+# print("The true ES (Using Bootstrap) at df1=20:", bootstrap_ES(df1, sample_data))
 
 #5b) Assume the underlying distribution is student T, find the 90% CI of ES
+sample_data = np.random.standard_t(df1, 500)
 def mle_student_t(data):
     def neg_log_likelihood(params):
         df, loc, scale = params
