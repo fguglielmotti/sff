@@ -16,8 +16,8 @@ from scipy.optimize import minimize
 from scipy.special import kv, gamma  
 from scipy.fft import fftshift, ifft
 
-random.seed(1234)
-np.random.seed(1234)
+random.seed(2024)
+np.random.seed(2024)
 
 #%%
 
@@ -296,3 +296,4 @@ print(f"Average Length of Parametric Bootstrap CI: {avg_len_parametric:.4f}")
 #THIS MARC MF CANT EXPLAIN SHIT <- delete this
 
 #However, this is not what he explain today in class where we generate a shit ton of MLEs, but rather what we thought of in the beginning
+#FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N
