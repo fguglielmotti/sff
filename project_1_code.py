@@ -50,7 +50,7 @@ def plot_distributions(df):
     plt.figure(figsize=(10, x_size))
     plt.plot(x_values, y_values, label='Inversion Formula PDF', linewidth=2)
     plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle= 'dotted')
-    plt.title('Plot of Inversion Formula PDF and Student\'s t-distribution from -' + str(x_size) + ' to ' + str(x_size) + ', alpha = 0.01, df=' + str(df))
+    plt.title('Plot of Inversion Formula PDF and Student\'s t-distribution from -' + str(x_size) + ' to ' + str(x_size) + ', df=' + str(df))
     plt.xlabel('x')
     plt.ylabel('Probability')
     plt.legend()
@@ -143,6 +143,8 @@ sample_data = np.random.standard_t(df1, 500)
 
 #5a) Perform bootstrap on the t-distribution, then output (true ES) of the samples
 def bootstrap_ES(df, n=500, B=500):
+    if df<=1:
+        return "Degrees of freedom must be above 1."
     ES_samples = []
     for _ in range(B):
         sample_data = np.random.standard_t(df, n)
@@ -151,7 +153,17 @@ def bootstrap_ES(df, n=500, B=500):
         ES_samples.append(ES)
     return mean(ES_samples)
 
-print("The true ES (Using Bootstrap) at df1:", bootstrap_ES(df1))
+print("The true ES (Using Bootstrap) at df1:", bootstrap_ES(df1,500,500))
+
+#This is additional, I made it to check if the number of bootstraps are converging into something
+x_values = list(range(1, 9000, 5))
+y_values = [bootstrap_ES(df1,500,x) for x in  tqdm(x_values)]
+plt.plot(x_values, y_values)
+plt.xlabel('Iterations of Bootstrap')
+plt.ylabel('Mean of the ES samples for each number of bootstraps')
+plt.title('Variation of the mean of the true ES (using Bootstrap) at df1 with different number of bootstraps.')
+plt.show()
+
 
 # def bootstrap_ES(df, t_values, loc=0, scale=1, ESlevel=0.05, n=500, B=500):
 #     if df<=1:
@@ -165,6 +177,8 @@ print("The true ES (Using Bootstrap) at df1:", bootstrap_ES(df1))
 #     return np.percentile(ES_samples, ESlevel * 100)
 
 # print("The true ES (Using Bootstrap) at df1=20:", bootstrap_ES(df1, sample_data))
+
+#%%
 
 #5b) Assume the underlying distribution is student T, find the 90% CI of ES
 def student_t_ES(df, loc=0, scale=1, ESlevel=0.05):
