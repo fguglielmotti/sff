@@ -230,7 +230,7 @@ plt.show()
 
 print(f"90% Confidence Interval via parametric Bootstrapping on simulated t-distribution for Expected Shortfall: ({parametric_ES_CI_lower:.4f}, {parametric_ES_CI_upper:.4f})")
 
-
+#%%
 #Q5c
 #Choose with replacement 500 samples for each bootstrap and calculate the ES and VaR for each bootstrap
 def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90, n=500):
