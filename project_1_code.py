@@ -16,8 +16,8 @@ from scipy.optimize import minimize
 from scipy.special import kv, gamma  
 from scipy.fft import fftshift, ifft
 
-random.seed(2024)
-np.random.seed(2024)
+random.seed(123)
+np.random.seed(123)
 
 #%%
 
@@ -108,7 +108,7 @@ plt.figure(figsize=(10, 6))
 plt.plot(x_values, pdf_values, label='PDF from Inverse Fourier Transform', linewidth=3, color='green')
 plt.plot(x_values, conv_pdf_numerical, label='Convolution of two t-distributions (Numerical Integration)', linewidth=3, color='red', linestyle='dotted')
 sns.kdeplot(sum_samples, label='Simulated Sum of t-distributions', color='blue', linewidth=3, linestyle='dotted')
-plt.title('Comparison of PDF from Inverse Fourier Transform, Simulated Sum, and Numerical Integration of two t-distributions with df1=20 and df2=10')
+plt.title('Comparison of PDF from Inverse Fourier Transform, Simulated Sum, and Numerical Integration of two t-distributions with df1=10 and df2=20')
 plt.xlabel('x')
 plt.ylabel('Probability')
 plt.xlim(-3, 3)
@@ -297,3 +297,4 @@ print(f"Average Length of Parametric Bootstrap CI: {avg_len_parametric:.4f}")
 
 #However, this is not what he explain today in class where we generate a shit ton of MLEs, but rather what we thought of in the beginning
 #FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N
+#MEOW MEOW MEOW IM GONNA KMS
