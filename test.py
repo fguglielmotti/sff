@@ -16,118 +16,10 @@ from scipy.optimize import minimize
 from scipy.special import kv, gamma  
 from scipy.fft import fftshift, ifft
 
-random.seed(123)
-np.random.seed(123)
+#random.seed(123)
+#np.random.seed(123)
 
-#%%
-
-#Question 1
-#Characteristic function found in the Gaunt article (already cited in overleaf)
-def cf_student_t(t, nu):
-    numerator = kv(nu / 2, np.sqrt(nu) * np.abs(t)) * (np.sqrt(nu) * np.abs(t)) ** (nu / 2)
-    denominator = gamma(nu / 2) * (2 ** (nu / 2 - 1))    
-    return numerator / denominator
-
-def integrand(t, x, df):
-    return (1/(math.pi*2))*np.exp(-1j * t * x) * cf_student_t(t, df)
-
-
-def inverse_fourier_transform(x, df, a=-3, b=3, n=600):
-    t_values = np.linspace(a, b, n)
-    integrand_values = [integrand(t, x, df) for t in t_values]
-    integral = scipy.integrate.trapezoid(integrand_values, t_values)
-    return integral.real
-
-def plot_distributions(df):
-    
-    if df<0:
-        return "ERROR: degrees of freedom cannot be negative."
-
-    x_values = np.linspace(-3,3,600) if df>25 else np.linspace(-6,6,600)
-    x_size = 3 if df>25 else 6
-    y_values = [inverse_fourier_transform(x, df, -x_size, x_size) for x in tqdm(x_values)]
-    t_values = [scipy.stats.t.pdf(x, df) for x in x_values]
-    plt.figure(figsize=(10, x_size))
-    plt.plot(x_values, y_values, label='Inversion Formula PDF', linewidth=2)
-    plt.plot(x_values, t_values, label="Student's t-distribution", color='red', linewidth=2, linestyle= 'dotted')
-    plt.title('Plot of Inversion Formula PDF and Student\'s t-distribution from -' + str(x_size) + ' to ' + str(x_size) + ', df=' + str(df))
-    plt.xlabel('x')
-    plt.ylabel('Probability')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-    diff = [(y - t) for y, t in zip(y_values, t_values)]
-    plt.plot(x_values, diff, label = 'Distance', color='green',linewidth=2)
-    plt.title('Plot of the Error of the Estimated Distribution')
-    plt.show()
-    return
-
-plot_distributions(30)
-plot_distributions(1)
-
-#%%
-#Question 2
 df1 = 10
-df2 = 20
-x_values = np.linspace(-3, 3, 600)
-
-#a)
-def joint_pdf(x, y, df1, df2):
-    return scipy.stats.t.pdf(x, df1) * scipy.stats.t.pdf(y, df2)
-
-def integrand(s, df1, df2):
-    return lambda x: joint_pdf(x, s - x, df1, df2)
-
-def numerical_integration(func, a, b, n=10000):
-    x = np.linspace(a, b, n+1)
-    y = func(x)
-    h = (b - a) / n
-    integral = (h / 2) * (y[0] + 2 * np.sum(y[1:-1]) + y[-1])
-    return integral
-
-conv_pdf_numerical = [numerical_integration(integrand(s, df1, df2), -3, 3) for s in x_values]
-
-#b)
-n = 500000
-t1_samples = np.random.standard_t(df1, n)
-t2_samples = np.random.standard_t(df2, n)
-sum_samples = t1_samples + t2_samples
-
-#c)
-def integrand_joint(t, x, df1, df2):
-    return (1/(math.pi*2))*np.exp(-1j * t * x) * cf_student_t(t, df1) * cf_student_t(t, df2)#CFt(t, lam1, alp, bet, delt1, mu) * CFt(t, lam2, alp, bet, delt2, mu) #This is not the CF of t, need to find it somewhere in his book
-
-def inverse_fourier_transform_joint(x, df1, df2, a=-3, b=3, n=600):
-    t_values = np.linspace(a, b, n)
-    integrand_values = [integrand_joint(t, x, df1, df2) for t in t_values]
-    integral = scipy.integrate.trapezoid(integrand_values, t_values)
-    return integral.real
-
-pdf_values = [inverse_fourier_transform_joint(x, df1, df2) for x in tqdm(x_values)]
-
-plt.figure(figsize=(10, 6))
-plt.plot(x_values, pdf_values, label='PDF from Inverse Fourier Transform', linewidth=3, color='green')
-plt.plot(x_values, conv_pdf_numerical, label='Convolution of two t-distributions (Numerical Integration)', linewidth=3, color='red', linestyle='dotted')
-sns.kdeplot(sum_samples, label='Simulated Sum of t-distributions', color='blue', linewidth=3, linestyle='dotted')
-plt.title('Comparison of PDF from Inverse Fourier Transform, Simulated Sum, and Numerical Integration of two t-distributions with df1=10 and df2=20')
-plt.xlabel('x')
-plt.ylabel('Probability')
-plt.xlim(-3, 3)
-plt.legend()
-plt.grid(True)
-plt.show()
-
-#%%
-#Question 3 ES and VaR page 446, defining losses as a negative value, hence ES = E[L|L<VaR]
-def ESt(df, c): #(Here c is the VaR at quantile alpha)
-    return -scipy.stats.t.pdf(c, df1)/scipy.stats.t.cdf(c, df1)*(df1+c**2)/(df1-1)
-
-#VaR is the alpha quantile of the t-distribution:
-def VaRt(df1, alpha):
-    return scipy.stats.t.ppf(alpha, df1)
-
-#print(VaRt(df1, 0.05), ESt(df1, VaRt(df1, 0.05)))
-
 #%%
 #Question 4
 def student_t_ES(df, loc=0, scale=1, ESlevel=0.05):
@@ -196,8 +88,9 @@ def mle_student_t(data):
 def expected_shortfall(data, ESlevel=0.05):
     sorted_data = np.sort(data)
     index = int(ESlevel * len(data))
-    ES = np.mean(sorted_data[:index])
-    return ES
+    ExS = mean(sorted_data[:index])
+    return ExS
+
 
 #Compute the 90% CI for the ES for the simulated samples, generated using the MLE parameters
 def parametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90, n=500):
@@ -206,8 +99,8 @@ def parametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90, n=500):
     ES_samples = []
     for _ in range(B):
         bootstrap_sample = t.rvs(df_mle, loc_mle, scale_mle, size=n)
-        ES = expected_shortfall(bootstrap_sample)
-        ES_samples.append(ES)
+        ExS = expected_shortfall(bootstrap_sample, ESlevel)
+        ES_samples.append(ExS)
     
     lower_bound = np.percentile(ES_samples, (1 - CI) / 2 * 100)
     upper_bound = np.percentile(ES_samples, (1 + CI) / 2 * 100)
@@ -236,12 +129,14 @@ print(f"90% Confidence Interval via parametric Bootstrapping on simulated t-dist
 def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90, n=500):
     ES_samples = []
     for _ in range(B):
-        bootstrap_sample = np.random.choice(data, n, replace=True)
-        ES = expected_shortfall(bootstrap_sample)
-        ES_samples.append(ES)
-    
-    lower_bound = np.percentile(ES_samples, (1 - CI) / 2 * 100)
-    upper_bound = np.percentile(ES_samples, (1 + CI) / 2 * 100)
+        bootstrap_sample = np.random.choice(data, len(data), replace=True)
+        ExS = expected_shortfall(bootstrap_sample, ESlevel)
+        ES_samples.append(ExS)
+    sorted_data = np.sort(ES_samples)
+    indexl = int((1 - CI) / 2 * len(ES_samples))
+    indexu = int((1 + CI) / 2 * len(ES_samples))
+    lower_bound = sorted_data[indexl]
+    upper_bound = sorted_data[indexu]
 
     return lower_bound, upper_bound, ES_samples
 
@@ -316,17 +211,18 @@ def check_coverage_probability(true_ES, df, n=500, iterations=100):
 #MEOW MEOW MEOW IM GONNA KMS
 
 def check_coverage_probability_nonparametric(true_ES, df, n, iterations=100):
-    nonparametric_coverage = 0
-    len_nonparametric = []
     cov_prob = []
     avg_len = []
     for i in tqdm(range(25, n)):
-        for _ in range(iterations):
+        nonparametric_coverage = 0
+        len_nonparametric = []
+        for j in range(iterations):
             data = stats.t.rvs(df, loc=0, scale=1.0, size=i)
             nonparametric_ES_CI_lower, nonparametric_ES_CI_upper, _ = nonparametric_bootstrap_CI(data, 0.05, 500, 0.9, i)
-            len_nonparametric.append(nonparametric_ES_CI_upper - nonparametric_ES_CI_lower)
             if nonparametric_ES_CI_lower <= true_ES <= nonparametric_ES_CI_upper:
                 nonparametric_coverage += 1
+            len_nonparametric.append(nonparametric_ES_CI_upper - nonparametric_ES_CI_lower)
+        
         nonparametric_coverage_prob = nonparametric_coverage / iterations
         avg_len_nonparametric = np.mean(len_nonparametric)
         cov_prob.append(nonparametric_coverage_prob)
@@ -336,7 +232,7 @@ def check_coverage_probability_nonparametric(true_ES, df, n, iterations=100):
 
 n = 35
 true_ES = student_t_ES(df1)
-cov_prob, avg_len = check_coverage_probability(true_ES, df1, n)
+cov_prob, avg_len = check_coverage_probability_nonparametric(true_ES, df1, n)
 
 # Plot the coverage probability and average length
 plt.figure(figsize=(12, 6))
