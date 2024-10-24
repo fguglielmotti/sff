@@ -206,7 +206,7 @@ def parametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90, n=500):
     ES_samples = []
     for _ in range(B):
         bootstrap_sample = t.rvs(df_mle, loc_mle, scale_mle, size=n)
-        ES = expected_shortfall(bootstrap_sample)
+        ES = expected_shortfall(bootstrap_sample, ESlevel)
         ES_samples.append(ES)
     
     lower_bound = np.percentile(ES_samples, (1 - CI) / 2 * 100)
@@ -237,7 +237,7 @@ def nonparametric_bootstrap_CI(data, ESlevel=0.05, B=500, CI=0.90, n=500):
     ES_samples = []
     for _ in range(B):
         bootstrap_sample = np.random.choice(data, n, replace=True)
-        ES = expected_shortfall(bootstrap_sample)
+        ES = expected_shortfall(bootstrap_sample, ESlevel)
         ES_samples.append(ES)
     
     lower_bound = np.percentile(ES_samples, (1 - CI) / 2 * 100)
@@ -309,24 +309,23 @@ def check_coverage_probability(true_ES, df, n=500, iterations=100):
 #Why does the question say we expect the parametric length to be shorter, but here we have parametric length longer than nonparametric length?
 #This main issue is that I assumed that the nonparametric is carried out on the simulated dataset using MLE, but we should use the actual data set?
 
-#THIS MARC MF CANT EXPLAIN SHIT <- delete this
-
 #However, this is not what he explain today in class where we generate a shit ton of MLEs, but rather what we thought of in the beginning
 #FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N FE!N
-#MEOW MEOW MEOW IM GONNA KMS
 
-def check_coverage_probability_nonparametric(true_ES, df, n, iterations=100):
-    nonparametric_coverage = 0
-    len_nonparametric = []
+
+def check_coverage_probability_nonparametric(true_ES, df, n, iterations=50):
     cov_prob = []
     avg_len = []
     for i in tqdm(range(25, n)):
-        for _ in range(iterations):
-            data = stats.t.rvs(df, loc=0, scale=1.0, size=i)
+        nonparametric_coverage = 0
+        len_nonparametric = []
+        for j in range(iterations):
+            data = stats.t.rvs(df, loc=0, scale=1.0, size=500) #Fix some size value, eg 500
             nonparametric_ES_CI_lower, nonparametric_ES_CI_upper, _ = nonparametric_bootstrap_CI(data, 0.05, 500, 0.9, i)
-            len_nonparametric.append(nonparametric_ES_CI_upper - nonparametric_ES_CI_lower)
             if nonparametric_ES_CI_lower <= true_ES <= nonparametric_ES_CI_upper:
                 nonparametric_coverage += 1
+            len_nonparametric.append(nonparametric_ES_CI_upper - nonparametric_ES_CI_lower)
+        
         nonparametric_coverage_prob = nonparametric_coverage / iterations
         avg_len_nonparametric = np.mean(len_nonparametric)
         cov_prob.append(nonparametric_coverage_prob)
@@ -334,9 +333,10 @@ def check_coverage_probability_nonparametric(true_ES, df, n, iterations=100):
     
     return cov_prob, avg_len
 
-n = 35
+# i ranges from 25 to n, check the coverage probability and average length of the CI
+n = 500
 true_ES = student_t_ES(df1)
-cov_prob, avg_len = check_coverage_probability(true_ES, df1, n)
+cov_prob, avg_len = check_coverage_probability_nonparametric(true_ES, df1, n)
 
 # Plot the coverage probability and average length
 plt.figure(figsize=(12, 6))
@@ -346,13 +346,13 @@ plt.subplot(1, 2, 1)
 plt.plot(range(25, n), cov_prob, label='Coverage Probability', color='blue')
 plt.xlabel('Sample Size')
 plt.ylabel('Coverage Probability')
-plt.title('Coverage Probability vs Sample Size')
+plt.title('Nonparametric Coverage Probability vs Sample Size')
 plt.grid(True)
 plt.legend()
 
 # Plot average length
 plt.subplot(1, 2, 2)
-plt.plot(range(25, n), avg_len, label='Average Length of CI', color='green')
+plt.plot(range(25, n), avg_len, label='Average Length of Nonparametric CI', color='green')
 plt.xlabel('Sample Size')
 plt.ylabel('Average Length of CI')
 plt.title('Average Length of CI vs Sample Size')
